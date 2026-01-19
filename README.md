@@ -1,4 +1,4 @@
 
 
-## How to get setup
+## Setup
 1. Clone Tensorflow models directory (git clone https://github.com/tensorflow/models.git) 
