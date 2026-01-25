@@ -1,4 +1,7 @@
 /models
 street_view_image.jpg
 /street_view_images
-env
+venv
+notes.md
+test.ipynb
+.env
