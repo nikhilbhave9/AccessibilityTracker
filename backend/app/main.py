@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.v1 import result
+from app.apis.v1 import result
 from app.core.config import config
 from app.core.logging import setup_logging
 

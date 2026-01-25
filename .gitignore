@@ -5,3 +5,4 @@ venv
 notes.md
 test.ipynb
 .env
+__pycache__/
