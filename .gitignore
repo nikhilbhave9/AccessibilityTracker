@@ -6,3 +6,4 @@ notes.md
 test.ipynb
 .env
 .vscode
+__pycache__/
