@@ -1,26 +1,26 @@
 from fastapi import FastAPI, Body
-from typing import List, Dict
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
 from app.apis.v1 import search
-from app.core.config import config
 from app.core.logging import setup_logging
-
-from app.schemas.search import SearchRequest
-
-from app.services.google_places import google_places
 
 setup_logging()
 
-app = FastAPI(title=config.app_name)
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(search.router, prefix="/api/v1", tags=["Health"])
 
 @app.get("/")
 async def root():
-    return {"message": "Hello, World!"}
-
-
-@app.post("/search")
-async def search(request: SearchRequest = Body(...)) -> List[Dict]:
-    places = await google_places(request.latitude, request.longitude, request.radius, request.place_type)
-    return places
-
-# # Register routes
-# app.include_router(user.router, prefix="/api/v1")
+    return {"message": f"Welcome to {settings.PROJECT_NAME}!"}

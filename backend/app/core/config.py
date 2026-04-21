@@ -1,12 +1,16 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+from functools import lru_cache
 
-class Config(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8"
-    )
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "Accessibility Tracker"
+    VERSION: str = "1.0.0"
+    GOOGLE_MAPS_API_KEY: str = ""
     
-    app_name: str = "Accessibility Tracker"
-    GOOGLE_MAPS_API_KEY: str
+    class Config:
+        env_file = ".env"
 
-config = Config()
+@lru_cache()
+def get_settings():
+    return Settings()
+
+settings = get_settings()
