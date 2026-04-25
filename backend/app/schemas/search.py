@@ -1,14 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-# class SearchRequest(BaseModel):
-#     latitude: float
-#     longitude: float
-#     radius: float
-#     place_type: str
-# Switch to Field() later for validation
+class GeocodeRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=200)
 
-# class SearchResponse(BaseModel):
-#     places: list[Place]
+class GeocodeResponse(BaseModel):
+    latitude: float
+    longitude: float
+    display_name: str
+
 class Health(BaseModel):
     status: str
     version: str
