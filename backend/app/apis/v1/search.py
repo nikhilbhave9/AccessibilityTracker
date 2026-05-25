@@ -1,23 +1,31 @@
 from typing import Annotated, List
 
 from fastapi import APIRouter, Query
-from app.schemas.search import Health, GeocodeRequest, GeocodeResponse, SearchRequest, PlaceResponse, AccessibilityPriorities
+from app.schemas.search import (
+    Health,
+    GeocodeRequest,
+    GeocodeResponse,
+    SearchRequest,
+    PlaceResponse,
+    AccessibilityPriorities,
+)
 from app.core.config import settings
 from app.services import geocoding
 from app.services.google_places import google_places_service
+from app.services.nearby_place_normalize import normalize_nearby_places
 
-router = APIRouter()
+router = APIRouter(tags=["Search"])
 
-@router.post("/search", response_model = List[PlaceResponse])
-async def search(request: SearchRequest):
+
+@router.post("/search", response_model=List[PlaceResponse])
+async def search(body: SearchRequest):
     """
-    Search for accessible places near a location
-    
+    Search for accessible places near a location (geocoded from query).
+
     Example request:
     {
-        "latitude": 18.5089,
-        "longitude": 73.7697,
-        "radius": 1000,
+        "query": "Baner, Pune",
+        "radius": 1500,
         "place_type": "restaurant",
         "accessibility_priorities": {
             "wheelchair_accessible_entrance": 3,
@@ -30,52 +38,75 @@ async def search(request: SearchRequest):
     Example response:
     [
         {
-            "display_name": "Restaurant 1",
-            "formatted_address": "123 Main St, Anytown, USA",
-            "location": {
-                "latitude": 18.5089,
-                "longitude": 73.7697
-            },
+            "display_name": {"text": "Sante Spa Cuisine", "languageCode": "en"},
+            "formatted_address": "Erawati Bangla, Shrinath Nagar, Baner, Pune, Maharashtra 411069, India",
+            "location": {"latitude": 18.5639122, "longitude": 73.7747798},
             "rating": 4.5,
-            "user_rating_count": 100,
+            "user_rating_count": 796,
             "accessibility_options": {
-                "wheelchair_accessible_entrance": True,
-                "wheelchair_accessible_parking": True,
-                "wheelchair_accessible_restroom": True,
-                "wheelchair_accessible_seating": True
+                "wheelchair_accessible_parking": true,
+                "wheelchair_accessible_entrance": true,
+                "wheelchair_accessible_restroom": false,
+                "wheelchair_accessible_seating": true
             },
-            "accessibility_score": 8.5,
+            "accessibility_score": 7.5,
             "accessibility_status": "excellent",
             "accessibility_breakdown": {
-                "wheelchair_accessible_entrance": True,
-                "wheelchair_accessible_parking": True,
-                "wheelchair_accessible_restroom": True,
-                "wheelchair_accessible_seating": True
+                "wheelchair_accessible_entrance": true,
+                "wheelchair_accessible_parking": true,
+                "wheelchair_accessible_restroom": false,
+                "wheelchair_accessible_seating": true
             }
         }
     ]
+
+    Returns places with accessibility_score > 0, sorted by score then rating.
     """
-    # Set default priorities if not provided
-    if request.accessibility_priorities is None:
-        request.accessibility_priorities = AccessibilityPriorities()
-    
-    # Geocode the location
-    location = await geocoding.geocode(f"{request.query}")
-    request.latitude = location["latitude"]
-    request.longitude = location["longitude"]
-    request.query = location["display_name"]
+    priorities = body.accessibility_priorities or AccessibilityPriorities()
 
-    # Search for places
+    location = await geocoding.geocode(body.query)
     places = await google_places_service.search_places(
-        latitude=request.latitude,
-        longitude=request.longitude,
-        radius=request.radius,
-        place_type=request.place_type
+        latitude=location["latitude"],
+        longitude=location["longitude"],
+        radius=body.radius,
+        place_type=body.place_type.value,
     )
-    accessible_places = []
+
+    results: List[PlaceResponse] = []
+    for normalized in normalize_nearby_places(places):
+        score_result = await google_places_service.get_accessibility_score(
+            normalized["accessibility_options"] or {},
+            priorities,
+        )
+
+        display_name = {"text": normalized.get("name") or "Unknown"}
+        if normalized.get("language_code"):
+            display_name["languageCode"] = normalized["language_code"]
+
+        results.append(PlaceResponse(
+            display_name=display_name,
+            formatted_address=normalized.get("formatted_address"),
+            location={
+                "latitude": normalized["latitude"],
+                "longitude": normalized["longitude"],
+            },
+            rating=normalized.get("rating"),
+            user_rating_count=normalized.get("user_rating_count"),
+            accessibility_options=normalized.get("accessibility_options"),
+            accessibility_score=score_result.score,
+            accessibility_status=score_result.status,
+            accessibility_breakdown=score_result.breakdown,
+        ))
+
+    filtered = [p for p in results if p.accessibility_score > 0]
+    return sorted(
+        filtered,
+        key=lambda p: (p.accessibility_score, p.rating or 0),
+        reverse=True,
+    )
 
 
-@router.get("/geocode", response_model = GeocodeResponse)
+@router.get("/geocode", response_model=GeocodeResponse)
 async def geocode(
     params: Annotated[GeocodeRequest, Query()],
 ):
@@ -86,14 +117,14 @@ async def geocode(
     return GeocodeResponse(
         latitude=result["latitude"],
         longitude=result["longitude"],
-        display_name=result["display_name"]
+        display_name=result["display_name"],
     )
 
 
-@router.get("/health", response_model = Health)
+@router.get("/health", response_model=Health)
 async def health_check():
     return Health(
         status="healthy",
         version=settings.VERSION,
-        message="Accessibility Tracker API is running and ready to serve requests."
+        message="Accessibility Tracker API is running and ready to serve requests.",
     )

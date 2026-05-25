@@ -22,11 +22,10 @@ class AccessibilityPriorities(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    latitude: float
-    longitude: float
-    radius: float
+    query: str = Field(..., min_length=1, max_length=200)
+    radius: float = Field(default=1000, ge=100, le=50000)
     place_type: PlaceTypeEnum
-    accessibility_priorities : AccessibilityPriorities
+    accessibility_priorities: Optional[AccessibilityPriorities] = None
 
 class PlaceResponse(BaseModel):
     display_name: Dict[str, str]

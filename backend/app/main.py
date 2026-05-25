@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(search.router, prefix="/api/v1", tags=["Health"])
+app.include_router(search.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
