@@ -2,8 +2,18 @@
 street_view_image.jpg
 /street_view_images
 venv
+.venv
+backend/venv/
 notes.md
-test.ipynb
 .env
 .vscode
 __pycache__/
+
+# Notebooks and local scratch
+test.ipynb
+**/test.ipynb
+**/sample.json
+
+# Saved API exploration output (curl | jq fixtures)
+*_results.json
+*results*.json

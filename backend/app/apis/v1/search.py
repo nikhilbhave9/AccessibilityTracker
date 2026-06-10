@@ -24,7 +24,7 @@ async def search(body: SearchRequest):
 
     Example request:
     {
-        "query": "Baner, Pune",
+        "query": "Connaught Place, New Delhi, Delhi",
         "radius": 1500,
         "place_type": "restaurant",
         "accessibility_priorities": {
@@ -38,9 +38,9 @@ async def search(body: SearchRequest):
     Example response:
     [
         {
-            "display_name": {"text": "Sante Spa Cuisine", "languageCode": "en"},
-            "formatted_address": "Erawati Bangla, Shrinath Nagar, Baner, Pune, Maharashtra 411069, India",
-            "location": {"latitude": 18.5639122, "longitude": 73.7747798},
+            "display_name": {"text": "Example Restaurant", "languageCode": "en"},
+            "formatted_address": "Block A, Connaught Place, New Delhi, Delhi 110001, India",
+            "location": {"latitude": 28.6315, "longitude": 77.2167},
             "rating": 4.5,
             "user_rating_count": 796,
             "accessibility_options": {
